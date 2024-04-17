@@ -1,10 +1,10 @@
 import uvicorn
+from fastapi import FastAPI
+from api.user_routes import router as user_router
+from fastapi.middleware.cors import CORSMiddleware
 from models.rbac import Role
 from models.database import Base, SessionLocal, engine
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends, HTTPException, status
-from fastapi.middleware.cors import CORSMiddleware
-from api.user_routes import router as user_router
 
 
 async def db_setup():
