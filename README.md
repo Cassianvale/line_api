@@ -1,7 +1,7 @@
 # line_api
 
 ## 基础环境
-python==3.8.5
+python==3.8.5  
 mysql==8.0
 
 ## 版本依赖

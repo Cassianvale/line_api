@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
+from typing import List
 
 import uvicorn
 from fastapi import FastAPI, Depends, HTTPException, status
@@ -98,10 +99,26 @@ class Token(BaseModel):
     message: str
 
 
-# 创建用户模型
 class UserCreate(BaseModel):
     username: str
     password: str
+
+
+class RoleBase(BaseModel):
+    id: int
+    name: str
+
+
+class UserBase(BaseModel):
+    id: int
+    username: str
+    roles: List[RoleBase]
+    is_active: bool
+    is_superuser: bool
+
+    class Config:
+        from_attributes = True
+
 
 
 class UserStatus(BaseModel):
@@ -189,7 +206,7 @@ def verify_token(token: str, credentials_exception):
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="无法验证凭据!",
+        detail="无效凭证!",
         headers={"WWW-Authenticate": "Bearer"},
     )
     username = verify_token(token, credentials_exception)
@@ -236,6 +253,27 @@ def update_user_status(user_id: int, user_status: UserStatus, db: Session = Depe
     db.commit()
     action = "启用" if user_status.is_active else "禁用"
     return {"message": f"用户已成功{action}!"}
+
+
+# 查询所有用户和查询单个用户
+@app.get("/users", response_model=List[UserBase])
+def get_users_all(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if not current_user.is_superuser:
+        raise HTTPException(status_code=403, detail="您没有权限执行此操作!")
+
+    return db.query(User).all()
+
+
+@app.get("/users/{user_id}", response_model=UserBase)
+def get_user_by_id(user_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if not current_user.is_superuser:
+        raise HTTPException(status_code=403, detail="您没有权限执行此操作!")
+
+    db_user = db.query(User).filter(User.id == user_id).first()
+    if db_user is None:
+        raise HTTPException(status_code=404, detail="用户不存在!")
+
+    return db_user
 
 
 if __name__ == "__main__":
