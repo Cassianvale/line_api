@@ -4,6 +4,9 @@
 python==3.8.5  
 mysql==8.0
 
+## 接口地址
+https://6xgj8epdfo.apifox.cn
+
 ## 版本依赖
 1.更新依赖文件
 `pip freeze > ./requirements.txt`
