@@ -7,11 +7,12 @@ from passlib.context import CryptContext
 from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError
 
-from main import app
+from fastapi import APIRouter
 from models.database import Base, engine, SessionLocal
 from models.rbac import User, Role
 from sqlalchemy.orm import Session
 
+router = APIRouter()
 
 Base.metadata.create_all(engine)
 
@@ -105,7 +106,7 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     return encoded_jwt
 
 
-@app.post("/register", response_model=Token)
+@router.post("/register", response_model=Token)
 def register_user(user: UserCreate, db: Session = Depends(get_db)):
     # 首先查找普通游客角色
     visitor_role = db.query(Role).filter(Role.name == "普通用户").first()
@@ -164,7 +165,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     return user
 
 
-@app.post("/login", response_model=Token)
+@router.post("/login", response_model=Token)
 def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = authenticate_user(db, form_data.username, form_data.password)
     if not user:
@@ -188,7 +189,7 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
     return {"access_token": "Bearer " + access_token, "username": user.username, "message": "登录成功"}
 
 
-@app.post("/users/{user_id}/status")
+@router.post("/users/{user_id}/status")
 def update_user_status(user_id: int, user_status: UserStatus, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if not current_user.is_superuser:
         raise HTTPException(status_code=403, detail="您没有权限执行此操作!")
@@ -204,7 +205,7 @@ def update_user_status(user_id: int, user_status: UserStatus, db: Session = Depe
 
 
 # 查询所有用户和查询单个用户
-@app.get("/users", response_model=List[UserBase])
+@router.get("/users", response_model=List[UserBase])
 def get_users_all(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if not current_user.is_superuser:
         raise HTTPException(status_code=403, detail="您没有权限执行此操作!")
@@ -212,7 +213,7 @@ def get_users_all(db: Session = Depends(get_db), current_user: User = Depends(ge
     return db.query(User).all()
 
 
-@app.get("/users/{user_id}", response_model=UserBase)
+@router.get("/users/{user_id}", response_model=UserBase)
 def get_user_by_id(user_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if not current_user.is_superuser:
         raise HTTPException(status_code=403, detail="您没有权限执行此操作!")

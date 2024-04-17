@@ -4,6 +4,7 @@ from models.database import Base, SessionLocal, engine
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from api.user_routes import router as user_router
 
 
 async def db_setup():
@@ -53,6 +54,7 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
+app.include_router(user_router, prefix="/api")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)
