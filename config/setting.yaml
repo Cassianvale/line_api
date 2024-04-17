@@ -1,6 +1,6 @@
 database:
-  host: 127.0.0.1
-  user: root
-  password: 123456
+  host: 103.97.56.179
+  user: testDB
+  password: zDedT3sbzkB76C8z
   database: testDB
   port: 3306

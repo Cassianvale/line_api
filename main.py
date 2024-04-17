@@ -1,15 +1,87 @@
-from fastapi import FastAPI, Depends, HTTPException
-from fastapi.security import OAuth2PasswordBearer
-from pydantic import ValidationError
+from contextlib import asynccontextmanager
+from datetime import datetime, timedelta
+
+import uvicorn
+from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from jose import jwt, JWTError
 from passlib.context import CryptContext
-import os
-from datetime import timedelta
-from fastapi import Depends, status
-from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
+from pydantic import BaseModel
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
+from models.database import Base, SessionLocal, engine
+from models.rbac import User, Role
+
+
+async def db_setup():
+    # 创建所有表
+    Base.metadata.create_all(bind=engine)
+    # 创建一个新的数据库会话
+    db = SessionLocal()
+    try:
+        # 调用初始化角色的方法
+        Role.initialize_roles(db)
+    finally:
+        db.close()
+
+
+async def startup_tasks():
+    await db_setup()
+
+
+async def shutdown_tasks():
+    # 这里可以添加应用关闭时需要执行的清理任务
+    pass
+
+
+@asynccontextmanager
+async def app_lifespan():
+    # 启动时的任务
+    await startup_tasks()
+    yield
+    # 关闭时的任务
+    await shutdown_tasks()
 
 app = FastAPI()
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0b3lvZnJhbmNlQGdtYWlsLmNvbSIsImF1ZCI6IkFsbCBBZGRyZXNzZXMiLCJpc3MiOiJodHRwczovL2xvY2FsaG9zdDo4MDgwLyIsImV4cCI6MTY3MjU2Njg4MCwiaWF0IjoxNjcyNTYyMjgwLCJqdGkiOiI4ODk1OTg1NzQxMjA4NzE5MjA3In0.gP4sJ76Hq6f8B7O1WQ5QHwM61uZ0o6r6e8Kv3p3Kl8Y")
+
+
+origins = [
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+]
+
+app.add_middleware(
+    CORSMiddleware,  # type: ignore
+    allow_origins=["*"],  # 测试使用
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["*"]
+)
+
+
+Base.metadata.create_all(engine)
+
+
+# 依赖项
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+# 密码上下文
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# OAuth2配置
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -18,68 +90,153 @@ jwt_config = {
     "algorithm": ALGORITHM,
     "access_token_expire_minutes": ACCESS_TOKEN_EXPIRE_MINUTES,
 }
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-class RegisterUser(BaseModel):
+class Token(BaseModel):
+    access_token: str
+    username: str
+    message: str
+
+
+# 创建用户模型
+class UserCreate(BaseModel):
     username: str
     password: str
 
-class User(BaseModel):
-    username = str
-    hashed_password = str
-    name = str
-    role = int
 
-def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+class UserStatus(BaseModel):
+    is_active: bool
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
+
+# 验证用户函数
+def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
 
+def get_password_hash(password):
+    return pwd_context.hash(password)
 
 
-fake_users_db = {}
+def get_user(db, username: str):
+    return db.query(User).filter(User.username == username).first()
 
-@app.post("/register")
-async def register(user: User):
-    if user.username in fake_users_db:
-        raise HTTPException(status_code=400, detail="用户名已被注册")
 
-    hashed_password = get_password_hash(user.password)
-    user_data = user.dict()
-    user_data["password"] = hashed_password
-    fake_users_db[user.username] = user_data
+def authenticate_user(db, username: str, password: str):
+    user = get_user(db, username)
+    if not user or not verify_password(password, user.hashed_password):
+        return False
+    return user
 
-    return {"message": "User registered successfully"}
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-def create_access_token(data: dict):
+# 生成JWT令牌
+def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
-    expire = jwt_config["access_token_expire_minutes"]
-    expire_time = datetime.utcnow() + timedelta(minutes=expire)
-    to_encode.update({"exp": expire_time})
-    encoded_jwt = jwt.encode(to_encode, jwt_config["secret_key"], algorithm=jwt_config["algorithm"])
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=15)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-@app.post("/login")
-async def login(user: User):
-    user_data = fake_users_db.get(user.username)
-    if not user_data or not verify_password(user.password, user_data["password"]):
+
+@app.post("/register", response_model=Token)
+def register_user(user: UserCreate, db: Session = Depends(get_db)):
+    # 首先查找普通游客角色
+    visitor_role = db.query(Role).filter(Role.name == "普通用户").first()
+    if not visitor_role:
+        visitor_role = Role(name="普通用户")  # 如果角色不存在，创建它
+        db.add(visitor_role)
+        db.commit()
+
+    # 添加用户
+    db_user = User(username=user.username, hashed_password=get_password_hash(user.password))
+    db_user.roles.append(visitor_role)  # 将普通游客角色分配给新用户
+    db.add(db_user)
+
+    try:
+        db.commit()  # 尝试提交事务
+    except IntegrityError:
+        db.rollback()  # 如果出现错误，回滚事务
+        raise HTTPException(status_code=400, detail="用户名已被注册!")
+
+    # 创建访问令牌
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.username}, expires_delta=access_token_expires
+    )
+
+    # 返回令牌和注册成功的信息
+    return {
+        "access_token": "Bearer " + access_token,
+        "username": user.username,
+        "message": "注册成功并分配角色: {}".format(visitor_role.name),
+    }
+
+
+def verify_token(token: str, credentials_exception):
+    try:
+        payload = jwt.decode(token, jwt_config['secret_key'], algorithms=[jwt_config['algorithm']])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+        return username
+    except JWTError:
+        raise credentials_exception
+
+
+# 从登录后的认证令牌中提取用户信息或者从会话中获取当前用户的ID，然后从数据库中获取用户信息
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="无法验证凭据!",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    username = verify_token(token, credentials_exception)
+    user = db.query(User).filter(User.username == username).first()
+    if user is None:
+        raise HTTPException(status_code=404, detail="用户不存在!")
+    return user
+
+
+@app.post("/login", response_model=Token)
+def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    user = authenticate_user(db, form_data.username, form_data.password)
+    if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
+            detail="用户名或密码错误!",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    access_token_expires = timedelta(minutes=jwt_config["access_token_expire_minutes"])
-    access_token = create_access_token(data={"sub": user.username})
+    if isinstance(user, bool):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="身份验证凭据无效!",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
 
-    return {"access_token": access_token, "token_type": "bearer", "expires_in": int(access_token_expires.total_seconds())}
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.username}, expires_delta=access_token_expires
+    )
+    return {"access_token": "Bearer " + access_token, "username": user.username, "message": "登录成功"}
+
+
+@app.post("/users/{user_id}/status")
+def update_user_status(user_id: int, user_status: UserStatus, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if not current_user.is_superuser:
+        raise HTTPException(status_code=403, detail="您没有权限执行此操作!")
+
+    db_user = db.query(User).filter(User.id == user_id).first()
+    if db_user is None:
+        raise HTTPException(status_code=404, detail="用户不存在!")
+
+    db_user.is_active = user_status.is_active
+    db.commit()
+    action = "启用" if user_status.is_active else "禁用"
+    return {"message": f"用户已成功{action}!"}
 
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=8000)
