@@ -10,5 +10,6 @@ class User(Base):
 
     id = Column(Integer, primary_key=True)
     username = Column(String(50), unique=True, nullable=False)
-    role_id = Column(Integer)
     password = Column(String(100), nullable=False)
+    role_id = Column(Integer)
+    status = Column(Integer, default=1)
