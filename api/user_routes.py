@@ -6,11 +6,11 @@ from jose import jwt, JWTError
 from passlib.context import CryptContext
 from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError
-
+from sqlalchemy.orm import Session
 from fastapi import APIRouter
 from models.database import Base, engine, SessionLocal
-from models.rbac import User, Role
-from sqlalchemy.orm import Session
+from models.rbac_model import User, Role
+from utils.apiResponse import ApiResponse
 
 router = APIRouter()
 
@@ -54,6 +54,11 @@ class UserCreate(BaseModel):
     password: str
 
 
+class PassWordChange(BaseModel):
+    old_password: str
+    new_password: str
+
+
 class RoleBase(BaseModel):
     id: int
     name: str
@@ -74,7 +79,13 @@ class UserStatus(BaseModel):
     is_active: bool
 
 
-# 验证用户函数
+class UserRoleChange(BaseModel):
+    user_id: int
+    new_role_name: str
+    old_role_name: str
+    is_superuser: bool
+
+
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
@@ -190,7 +201,8 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
 
 
 @router.post("/users/{user_id}/status")
-def update_user_status(user_id: int, user_status: UserStatus, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def update_user_status(user_id: int, user_status: UserStatus, db: Session = Depends(get_db),
+                       current_user: User = Depends(get_current_user)):
     if not current_user.is_superuser:
         raise HTTPException(status_code=403, detail="您没有权限执行此操作!")
 
@@ -210,7 +222,8 @@ def get_users_all(db: Session = Depends(get_db), current_user: User = Depends(ge
     if not current_user.is_superuser:
         raise HTTPException(status_code=403, detail="您没有权限执行此操作!")
 
-    return db.query(User).all()
+    users = db.query(User).all()
+    return users
 
 
 @router.get("/users/{user_id}", response_model=UserBase)
@@ -224,3 +237,84 @@ def get_user_by_id(user_id: int, db: Session = Depends(get_db), current_user: Us
 
     return db_user
 
+
+@router.post("/users/{user_id}/change-role")
+def change_user_role(user_id: int, new_role_id: int, db: Session = Depends(get_db),
+                     current_user: User = Depends(get_current_user)):
+    # 从数据库中获取用户
+    if not current_user.is_superuser:
+        raise HTTPException(status_code=403, detail="您没有权限执行此操作!")
+
+    # Fetch the user from the database
+    db_user = db.query(User).filter(User.id == user_id).first()
+    if db_user is None:
+        raise HTTPException(status_code=404, detail="用户不存在!")
+
+    # 从数据库中获取新角色
+    new_role = db.query(Role).filter(Role.id == new_role_id).first()
+    if new_role is None:
+        raise HTTPException(status_code=404, detail="角色不存在!")
+
+    # Store old role name for response
+    old_role_name = db_user.roles[0].name if db_user.roles else "无"
+
+    # 清除现有角色并添加新角色
+    db_user.roles = [new_role]
+
+    # 如果新的role_id为1，则将用户设置为超级用户
+    if new_role_id == 1:
+        db_user.is_superuser = True
+    else:
+        db_user.is_superuser = False
+
+    db.commit()
+
+    data = UserRoleChange(
+        user_id=user_id,
+        is_superuser=db_user.is_superuser,
+        new_role_name=new_role.name,
+        old_role_name=old_role_name
+    )
+
+    return ApiResponse(data=data, msg="角色修改成功! 已修改为 {}".format(new_role.name))
+
+
+@router.put("/change-password")
+def change_password(password_data: PassWordChange, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    # 验证当前用户的身份
+    if not current_user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="未经授权的用户")
+
+    # 检查新密码是否符合安全要求
+    # 例如,密码长度至少为8个字符,包含大小写字母和数字
+    if len(password_data.new_password) < 8 or not any(char.isdigit() for char in password_data.new_password) or not any(char.isupper() for char in password_data.new_password) or not any(char.islower() for char in password_data.new_password):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="新密码不符合安全要求")
+
+    # 验证旧密码是否正确
+    if not verify_password(password_data.old_password, current_user.hashed_password):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="旧密码不正确")
+
+    # 更新数据库中的密码哈希值
+    current_user.hashed_password = get_password_hash(password_data.new_password)
+    db.commit()
+
+    return ApiResponse(msg="密码已成功更新!")
+
+
+@router.post("/users/{user_id}/reset-password")
+def reset_password(user_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+
+    if not current_user.is_superuser:
+        raise HTTPException(status_code=403, detail="您没有权限执行此操作!")
+
+    # 查找要重置密码的用户
+    db_user = db.query(User).filter(User.id == user_id).first()
+    if db_user is None:
+        raise HTTPException(status_code=404, detail="用户不存在!")
+
+    # 重置密码，这里使用 "123456" 作为新密码
+    new_password_hash = get_password_hash("123456")
+    db_user.hashed_password = new_password_hash
+    db.commit()
+
+    return ApiResponse(msg=f"用户 {db_user.username} 的密码已成功重置为默认密码!")

@@ -1,8 +1,9 @@
 import uvicorn
 from fastapi import FastAPI
 from api.user_routes import router as user_router
+from api.project_routes import router as project_router
 from fastapi.middleware.cors import CORSMiddleware
-from models.rbac import Role
+from models.rbac_model import Role
 from models.database import Base, SessionLocal, engine
 from contextlib import asynccontextmanager
 
@@ -55,6 +56,8 @@ app.add_middleware(
 )
 
 app.include_router(user_router, prefix="/api")
+app.include_router(project_router, prefix="/api")
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)
