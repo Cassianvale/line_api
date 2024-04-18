@@ -1,9 +1,12 @@
 # python
+
+*/__pycache__/
 .conda
 .vscode
 .idea
 .env
 venv
 alembic/versions/*
+lib/*
 logs/*
-*/__pycache__/
+!.gitkeep
