@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from models.database import SessionLocal
-from models.project_model import Project, EnvironmentVariable, Module
+from models.project import Project, EnvironmentVariable, Module
 from utils.apiResponse import ApiResponse
 
 router = APIRouter()

@@ -1,9 +1,9 @@
 import uvicorn
 from fastapi import FastAPI
-from api.user_routes import router as user_router
-from api.project_routes import router as project_router
+from api.users import router as user_router
+from api.project import router as project_router
 from fastapi.middleware.cors import CORSMiddleware
-from models.rbac_model import Role
+from models.users import Role
 from models.database import Base, SessionLocal, engine
 from contextlib import asynccontextmanager
 

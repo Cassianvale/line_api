@@ -1,8 +1,8 @@
 # line_api
 
 ## 基础环境
-python==3.8.5  
-mysql==8.0
+python==3.10  
+mysql==8.2
 
 ## 接口地址  
 https://6xgj8epdfo.apifox.cn

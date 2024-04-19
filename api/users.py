@@ -9,7 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from fastapi import APIRouter
 from models.database import Base, engine, SessionLocal
-from models.rbac_model import User, Role
+from models.users import User, Role
 from utils.apiResponse import ApiResponse
 
 router = APIRouter()
