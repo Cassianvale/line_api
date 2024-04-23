@@ -34,7 +34,7 @@ def get_url():
     host = os.getenv("MYSQL_HOST", "testdb")
     port = os.getenv("MYSQL_PORT", "3306")
     db = os.getenv("MYSQL_DB", "testdb")
-    return f"postgresql+psycopg://{user}:{password}@{host}:{port}/{db}"
+    return f"mysql+pymysql://{user}:{password}@{host}:{port}/{db}"
 
 
 # 离线模式

@@ -1,20 +1,22 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from sqlmodel import Session, select
+from core.models import UserBase, UserCreate
+from core.config import settings
 from datetime import datetime
-from alembic import context
 from sqlalchemy import create_engine, Column, Integer, DateTime
-from sqlalchemy.orm import sessionmaker, as_declarative, declared_attr
-from utils.yaml_control import read_config
-from utils.log_control import INFO, ERROR
+from sqlalchemy.orm import as_declarative, declared_attr
+from utils.log_control import ERROR
 
-HOST = read_config("database").get("host")
-USER = read_config("database").get("user")
-PWD = read_config("database").get("password")
-DB = read_config("database").get("database")
-PORT = read_config("database").get("port")
+# 加载环境变量
+user = settings.MYSQL_USER
+password = settings.MYSQL_PASSWORD
+host = settings.MYSQL_HOST
+port = settings.MYSQL_PORT
+db = settings.DATABASE_NAME
 
-sqlalchemy_url = f"mysql+pymysql://{USER}:{PWD}@{HOST}:{PORT}/{DB}"
+sqlalchemy_url = f"mysql+pymysql://{user}:{password}@{host}:{port}/{db}"
 
 engine = create_engine(
     sqlalchemy_url, pool_pre_ping=True
@@ -25,23 +27,31 @@ try:
     engine.connect()
     print(f"连接数据库成功!")
 except Exception as e:
+    print("错误")
     print(e)
     ERROR.logger.error(e)
     raise
 
-SessionLocal = sessionmaker(autoflush=False, bind=engine)
+def init_db(session: Session) -> None:
+    # 应使用 Alembic 迁移创建表
+    # 但如果您不想使用迁移，请创建
+    # 取消注释下一行的表
+    # 从 sqlmodel 导入 SQLModel
 
-"""
-primary_key	是否为主键
-unique	是否唯一
-index	如果为True，为该列创建索引，提高查询效率
-nullable	是否允许为空
-default	默认值
-name	在数据表中的字段映射
-autoincrement	是否自动增长
-onupdate	更新时执行的函数
-comment	字段描述
-"""
+    # 从 core.engine 导入 engine
+    # 这有效，因为模型已从 app.models 导入并注册
+    # SQLModel.metadata.create_all(engine)
+
+    user = session.execute(
+        select(UserBase).where(UserBase.username == settings.FIRST_SUPERUSER_USERNAME)
+    ).first()
+    if not user:
+        user_in = UserCreate(
+            username=settings.FIRST_SUPERUSER_USERNAME,
+            password=settings.FIRST_SUPERUSER_PASSWORD,
+            is_superuser=True,
+        )
+        # user = create_user(session=session, user_create=user_in)
 
 
 @as_declarative()
@@ -57,3 +67,4 @@ class Base:
     @declared_attr
     def __tablename__(cls) -> str:
         return cls.__name__.lower()
+

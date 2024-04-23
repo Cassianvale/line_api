@@ -5,7 +5,6 @@ from typing import List
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from models.database import SessionLocal
 from models.project import Project, EnvironmentVariable, Module
 from utils.apiResponse import ApiResponse
 
@@ -13,12 +12,6 @@ router = APIRouter()
 
 
 # 依赖项，用于获取数据库会话
-def get_db():
-    try:
-        db = SessionLocal()
-        yield db
-    finally:
-        db.close()
 
 
 class ProjectModel(BaseModel):

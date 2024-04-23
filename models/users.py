@@ -3,8 +3,8 @@
 
 from sqlalchemy import Column, Integer, String, Boolean, Table, ForeignKey
 from sqlalchemy.orm import relationship, Session
-from models.database import SessionLocal
 from models.database import Base
+from api import deps
 
 # 关联表，用户和角色的多对多关系
 user_role_association = Table(
@@ -23,17 +23,8 @@ role_permission_association = Table(
 )
 
 
-# 创建数据库会话
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-# 获取数据库会话
-db = next(get_db())
+db = next(deps.get_db())
+print(db)
 
 
 class Role(Base):
@@ -47,7 +38,7 @@ class Role(Base):
 
     @classmethod
     def initialize_roles(cls, db: Session):
-        roles = ['超级管理员', '开发人员', '测试人员', '普通用户', '游客']
+        roles = ['超级管理员', '开发人员', '测试人员', '普通用户']
         # 遍历角色名称，创建角色
         for role_name in roles:
             existing_role = db.query(Role).filter(Role.name == role_name).first()
@@ -79,3 +70,4 @@ class User(Base):
 
     def __repr__(self):
         return f"<User(username={self.username})>"
+

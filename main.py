@@ -1,18 +1,16 @@
 import uvicorn
 from fastapi import FastAPI
-from api.users import router as user_router
-from api.project import router as project_router
 from fastapi.middleware.cors import CORSMiddleware
 from models.users import Role
-from models.database import Base, SessionLocal, engine
+from models.database import Base, engine
 from contextlib import asynccontextmanager
+from api.routes import login, users
+from api import deps
 
 
 async def db_setup():
-    # 创建所有表
-    Base.metadata.create_all(bind=engine)
     # 创建一个新的数据库会话
-    db = SessionLocal()
+    db = deps.get_db()
     try:
         # 调用初始化角色的方法
         Role.initialize_roles(db)
@@ -40,23 +38,16 @@ async def app_lifespan():
 app = FastAPI()
 
 
-origins = [
-    "http://localhost:8000",
-    "http://127.0.0.1:8000",
-    "http://localhost:8080",
-    "http://127.0.0.1:8080",
-]
-
 app.add_middleware(
     CORSMiddleware,  # type: ignore
     allow_origins=["*"],  # 测试使用
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"]
 )
 
-app.include_router(user_router, prefix="/api")
-app.include_router(project_router, prefix="/api")
+app.include_router(login.router, tags=["login"])
+app.include_router(users.router, prefix="/users")
 
 
 if __name__ == "__main__":

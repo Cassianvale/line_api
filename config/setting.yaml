@@ -1,6 +1,0 @@
-database:
-  host: 103.97.56.179
-  user: testDB
-  password: zDedT3sbzkB76C8z
-  database: testDB
-  port: 3306
