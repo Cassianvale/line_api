@@ -3,7 +3,7 @@
 from collections.abc import Generator
 from sqlmodel import SQLModel
 from sqlmodel import Session
-from core.config import settings
+from config.setting import settings
 from typing import Annotated
 from fastapi.security import OAuth2PasswordBearer
 from fastapi import Depends, HTTPException, status
@@ -11,7 +11,7 @@ from models.users import User
 from core import security
 from jose import JWTError, jwt
 from pydantic import ValidationError
-from models.database import engine
+from core.db import engine
 
 
 def get_db() -> Generator[Session, None, None]:
@@ -26,11 +26,13 @@ class TokenPayload(SQLModel):
 reusable_oauth2 = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_V1_STR}/login"
 )
+
+# 依赖注入
 SessionDep = Annotated[Session, Depends(get_db)]
 TokenDep = Annotated[str, Depends(reusable_oauth2)]
 
 
-def get_current_user(session: SessionDep, token: str = Depends(TokenDep)) -> User:
+def get_current_user(session: SessionDep, token: TokenDep) -> User:
     try:
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
@@ -43,7 +45,6 @@ def get_current_user(session: SessionDep, token: str = Depends(TokenDep)) -> Use
         )
 
     user = session.get(User, token_data.sub)
-    # user = db.query(User).filter(User.username == username).first()
     if not user:
         raise HTTPException(status_code=404, detail="没有此用户!")
     if not user.is_active:
@@ -54,7 +55,6 @@ def get_current_user(session: SessionDep, token: str = Depends(TokenDep)) -> Use
 CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
-#
 def get_current_active_superuser(current_user: CurrentUser) -> User:
     if not current_user.is_superuser:
         raise HTTPException(

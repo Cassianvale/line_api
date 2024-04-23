@@ -3,7 +3,7 @@ from typing import Any
 from models.users import User
 from jose import jwt
 from passlib.context import CryptContext
-from core.config import settings
+from config.setting import settings
 from sqlmodel import Session, select
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -40,3 +40,4 @@ def authenticate_user(*, session: Session, username: str, password: str) -> User
     if not verify_password(password, db_user.hashed_password):
         return None
     return db_user
+

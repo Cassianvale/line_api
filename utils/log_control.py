@@ -7,7 +7,7 @@ from typing import Text
 import colorlog
 import time
 from pathlib import Path
-from config import ensure_path_sep
+from utils import ensure_path_sep
 
 
 class LogHandler:

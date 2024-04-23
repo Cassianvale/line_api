@@ -2,10 +2,9 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from models.users import Role
-from models.database import Base, engine
 from contextlib import asynccontextmanager
-from api.routes import login, users
-from api import deps
+from app.routes import login, users
+from core import deps
 
 
 async def db_setup():

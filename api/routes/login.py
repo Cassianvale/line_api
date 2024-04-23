@@ -5,10 +5,10 @@ from datetime import timedelta
 from typing import Annotated
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from api.deps import SessionDep
+from core.deps import SessionDep
 from fastapi import APIRouter
 from core import security
-from core.config import settings
+from config.setting import settings
 from utils.apiResponse import ApiResponse
 
 router = APIRouter()

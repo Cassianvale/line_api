@@ -4,7 +4,6 @@
 .conda
 .vscode
 .idea
-.env
 venv
 alembic/versions/*
 lib/*

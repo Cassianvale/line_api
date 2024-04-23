@@ -3,8 +3,9 @@
 
 import os
 import yaml
+
+import utils
 from utils.log_control import INFO, ERROR
-from config import ensure_path_sep
 
 
 def get_yaml_data(filepath) -> dict:
@@ -19,11 +20,9 @@ def get_yaml_data(filepath) -> dict:
 
 def read_config(key: str) -> str:
     try:
-        config = ensure_path_sep('\\config\\setting.yaml')
+        config = utils.ensure_path_sep('\\config\\setting.yaml')
         data = get_yaml_data(config)
         return data[key]
     except KeyError:
         ERROR.logger.error(f"config不包含 {key} 键名")
         raise KeyError(f"config不包含 {key} 键名")
-
-

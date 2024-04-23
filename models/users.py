@@ -3,8 +3,8 @@
 
 from sqlalchemy import Column, Integer, String, Boolean, Table, ForeignKey
 from sqlalchemy.orm import relationship, Session
-from models.database import Base
-from api import deps
+from core.db import Base
+from core import deps
 
 # 关联表，用户和角色的多对多关系
 user_role_association = Table(

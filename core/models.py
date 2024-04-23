@@ -23,7 +23,6 @@ class RoleBase(SQLModel):
 
 class UserBase(SQLModel):
     username: str = Field(unique=True, index=True)
-    items: list["Item"] = Relationship(back_populates="owner")
     is_active: bool = True
     is_superuser: bool = False
 

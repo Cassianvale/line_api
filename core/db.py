@@ -1,38 +1,25 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from sqlmodel import Session, select
-from core.models import UserBase, UserCreate
-from core.config import settings
+from config.setting import settings
 from datetime import datetime
 from sqlalchemy import create_engine, Column, Integer, DateTime
 from sqlalchemy.orm import as_declarative, declared_attr
 from utils.log_control import ERROR
 
 # 加载环境变量
-user = settings.MYSQL_USER
-password = settings.MYSQL_PASSWORD
-host = settings.MYSQL_HOST
-port = settings.MYSQL_PORT
-db = settings.DATABASE_NAME
-
-sqlalchemy_url = f"mysql+pymysql://{user}:{password}@{host}:{port}/{db}"
-
-engine = create_engine(
-    sqlalchemy_url, pool_pre_ping=True
-)
+engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI))
 
 # 测试数据库连接
 try:
     engine.connect()
     print(f"连接数据库成功!")
 except Exception as e:
-    print("错误")
-    print(e)
+    print(f"连接数据库错误，错误信息：{e}")
     ERROR.logger.error(e)
     raise
 
-def init_db(session: Session) -> None:
+# def init_db(session: Session) -> None:
     # 应使用 Alembic 迁移创建表
     # 但如果您不想使用迁移，请创建
     # 取消注释下一行的表
@@ -42,15 +29,15 @@ def init_db(session: Session) -> None:
     # 这有效，因为模型已从 app.models 导入并注册
     # SQLModel.metadata.create_all(engine)
 
-    user = session.execute(
-        select(UserBase).where(UserBase.username == settings.FIRST_SUPERUSER_USERNAME)
-    ).first()
-    if not user:
-        user_in = UserCreate(
-            username=settings.FIRST_SUPERUSER_USERNAME,
-            password=settings.FIRST_SUPERUSER_PASSWORD,
-            is_superuser=True,
-        )
+    # user = session.execute(
+    #     select(UserBase).where(UserBase.username == settings.FIRST_SUPERUSER_USERNAME)
+    # ).first()
+    # if not user:
+    #     user_in = UserCreate(
+    #         username=settings.FIRST_SUPERUSER_USERNAME,
+    #         password=settings.FIRST_SUPERUSER_PASSWORD,
+    #         is_superuser=True,
+    #     )
         # user = create_user(session=session, user_create=user_in)
 
 
