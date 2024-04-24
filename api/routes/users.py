@@ -58,7 +58,7 @@ def register_user(session: SessionDep, user: UserCreate):
 
 @router.post("/{user_id}/status")
 def update_user_status(session: SessionDep, user_id: int, user_status: UserStatus,
-                       current_user: CurrentUser):
+                       current_user: User = Depends(get_current_user)):
     if not current_user.is_superuser:
         raise HTTPException(status_code=403, detail="您没有权限执行此操作!")
 

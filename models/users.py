@@ -1,73 +1,32 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 
-from sqlalchemy import Column, Integer, String, Boolean, Table, ForeignKey
-from sqlalchemy.orm import relationship, Session
-from core.db import Base
-from core import deps
-
-# 关联表，用户和角色的多对多关系
-user_role_association = Table(
-    'user_role_association',
-    Base.metadata,
-    Column('user_id', ForeignKey('users.id'), primary_key=True),
-    Column('role_id', ForeignKey('roles.id'), primary_key=True)
-)
-
-# 关联表，角色和权限的多对多关系
-role_permission_association = Table(
-    'role_permission_association',
-    Base.metadata,
-    Column('role_id', ForeignKey('roles.id'), primary_key=True),
-    Column('permission_id', ForeignKey('permissions.id'), primary_key=True),
-)
+from typing import List, Optional
+from sqlmodel import SQLModel, Field, Relationship, DateTime
+from datetime import datetime
 
 
-db = next(deps.get_db())
-print(db)
+class CommonColumns(SQLModel):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    create_time: Optional[datetime] = Field(default_factory=datetime.utcnow, nullable=False)
+    update_time: Optional[datetime] = Field(default_factory=datetime.utcnow, nullable=False)
+    is_delete: bool = Field(default=False, nullable=False)
 
 
-class Role(Base):
+class Role(CommonColumns, table=True):
     __tablename__ = 'roles'
-    name = Column(String(50), unique=True, nullable=False, comment="角色名称")
-    users = relationship('User', secondary=user_role_association, back_populates='roles')
-    permissions = relationship('Permission', secondary=role_permission_association, back_populates='roles')
-
-    def __repr__(self):
-        return f"<Role(name={self.name})>"
-
-    @classmethod
-    def initialize_roles(cls, db: Session):
-        roles = ['超级管理员', '开发人员', '测试人员', '普通用户']
-        # 遍历角色名称，创建角色
-        for role_name in roles:
-            existing_role = db.query(Role).filter(Role.name == role_name).first()
-            if existing_role is None:
-                # 角色不存在，创建新角色
-                new_role = Role(name=role_name)
-                db.add(new_role)
-        db.commit()
+    name: str = Field(sa_column_kwargs={"comment": "角色名称"}, max_length=50, index=True, nullable=False)
+    users: List["User"] = Relationship(back_populates="roles")
 
 
-class Permission(Base):
-    __tablename__ = 'permissions'
-    name = Column(String(50), unique=True, nullable=False, comment="权限名称")
-    roles = relationship('Role', secondary=role_permission_association, back_populates='permissions')
-
-    def __repr__(self):
-        return f"<Permission(name={self.name})>"
-
-
-class User(Base):
+class User(CommonColumns, table=True):
     __tablename__ = 'users'
-    id = Column(Integer, primary_key=True)
-    username = Column(String(50), unique=True, nullable=False, comment="用户名")
-    hashed_password = Column(String(200), nullable=False, comment="密码")
-    roles = relationship('Role', secondary=user_role_association, back_populates='users')
-    is_active = Column(Boolean, default=True)
-    is_superuser = Column(Boolean, default=False)  # 标识是否为超级管理员
-    status = Column(Integer, default=1)
+    username: str = Field(sa_column_kwargs={"comment": "用户名"}, max_length=50, index=True, nullable=False)
+    hashed_password: str = Field(sa_column_kwargs={"comment": "密码"}, max_length=200, nullable=False)
+    is_active: bool = Field(default=True)
+    is_superuser: bool = Field(default=False)  # 标识是否为超级管理员
+    roles: List[Role] = Relationship(back_populates="users")
 
-    def __repr__(self):
-        return f"<User(username={self.username})>"
+
+
 

@@ -38,6 +38,7 @@ class UserRegister(SQLModel):
     username: str
     password: str
 
+
 class PassWordChange(SQLModel):
     old_password: str
     new_password: str

@@ -1,15 +1,14 @@
 import uvicorn
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from models.users import Role
 from contextlib import asynccontextmanager
-from app.routes import login, users
+from api.routes import login, users
 from core import deps
 
 
 async def db_setup():
     # 创建一个新的数据库会话
-    db = deps.get_db()
+    db = deps.SessionDep
     try:
         # 调用初始化角色的方法
         Role.initialize_roles(db)
@@ -36,14 +35,6 @@ async def app_lifespan():
 
 app = FastAPI()
 
-
-app.add_middleware(
-    CORSMiddleware,  # type: ignore
-    allow_origins=["*"],  # 测试使用
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"]
-)
 
 app.include_router(login.router, tags=["login"])
 app.include_router(users.router, prefix="/users")
