@@ -31,3 +31,5 @@ sqlmodel==0.0.16
 starlette==0.37.2
 typing_extensions==4.11.0
 uvicorn==0.29.0
+
+redis~=3.5.3
