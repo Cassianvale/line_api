@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
+
 from typing import List
 from sqlmodel import Field, Relationship, SQLModel
 

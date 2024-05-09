@@ -105,11 +105,11 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-print(get_env_file())
-print(settings)
-print(settings.API_V1_STR)
-print(settings.SQLALCHEMY_DATABASE_URI)
-print(settings.REDIS_URI)
+# print(get_env_file())
+# print(settings)
+# print(settings.API_V1_STR)
+# print(settings.SQLALCHEMY_DATABASE_URI)
+# print(settings.REDIS_URI)
 
 
 

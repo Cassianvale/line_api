@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
+
 from collections.abc import Generator
 from sqlmodel import SQLModel
 from sqlmodel import Session
@@ -11,10 +12,11 @@ from models.users import User
 from core import security
 from jose import JWTError, jwt
 from pydantic import ValidationError
-from core.db import engine
+from core.db import MysqlManager
 
 
 def get_db() -> Generator[Session, None, None]:
+    engine = MysqlManager.connect_to_database()
     with Session(engine) as session:
         yield session
 

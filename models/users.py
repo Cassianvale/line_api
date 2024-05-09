@@ -2,7 +2,7 @@
 # -*- encoding: utf-8 -*-
 
 from typing import List, Optional
-from sqlmodel import SQLModel, Field, Relationship, DateTime
+from sqlmodel import SQLModel, Field, Relationship
 from datetime import datetime
 
 

@@ -2,7 +2,7 @@ import uvicorn
 from fastapi import FastAPI
 from models.users import Role
 from contextlib import asynccontextmanager
-from api.routes import login, users
+from apps.routes import login, users
 from core import deps
 
 

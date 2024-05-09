@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
+
 from datetime import datetime, timedelta
 from typing import Any
 from models.users import User
