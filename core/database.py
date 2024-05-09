@@ -3,13 +3,11 @@
 
 from typing import Optional
 from datetime import datetime
-from sqlmodel import SQLModel, Field, Relationship, inspect
+from sqlmodel import SQLModel, Field, inspect
 
 
 class BaseModel(SQLModel, table=True):
-    """
-    公共 ORM 基表模型
-    """
+
     id: Optional[int] = Field(default=None, primary_key=True)
     create_datetime: Optional[datetime] = Field(default=None)
     update_datetime: Optional[datetime] = Field(default=None)
@@ -59,6 +57,3 @@ class BaseModel(SQLModel, table=True):
         """
         mapper = inspect(cls)
         return mapper.relationships.keys()
-
-    
-print(BaseModel.get_attrs())

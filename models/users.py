@@ -5,14 +5,6 @@ from typing import List, Optional
 from sqlmodel import SQLModel, Field, Relationship
 from datetime import datetime
 
-
-class CommonColumns(SQLModel):
-    id: Optional[int] = Field(default=None, primary_key=True)
-    create_time: Optional[datetime] = Field(default_factory=datetime.utcnow, nullable=False)
-    update_time: Optional[datetime] = Field(default_factory=datetime.utcnow, nullable=False)
-    is_delete: bool = Field(default=False, nullable=False)
-
-
 class Role(CommonColumns, table=True):
     __tablename__ = 'roles'
     name: str = Field(sa_column_kwargs={"comment": "角色名称"}, max_length=50, index=True, nullable=False)
