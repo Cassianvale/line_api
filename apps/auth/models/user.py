@@ -2,9 +2,21 @@
 # -*- encoding: utf-8 -*-
 
 from core.database import BaseModel
-from sqlmodel import Field, Relationship
+from sqlmodel import SQLModel, Field, Relationship
 from typing import List, Optional
-from apps.auth.models.role import Role
+
+
+class Role(BaseModel, table=True):
+    __tablename__ = "line_auth_role"
+    __table_args__ = ({"comment": "角色表"})
+
+    name: str = Field(sa_column_kwargs={"comment": "角色名称"}, max_length=50, nullable=False)
+    desc: Optional[str] = Field(sa_column_kwargs={"comment": "描述"}, max_length=255, nullable=True)
+    order: Optional[int] = Field(default=0, sa_column_kwargs={"comment": "排序"})
+    disabled: bool = Field(default=False, sa_column_kwargs={"comment": "是否禁用"})
+    is_admin: bool = Field(default=False, sa_column_kwargs={"comment": "是否为管理员"})
+
+    users: List["User"] = Relationship(back_populates="roles", link_model="UserRoleLink")
 
 
 class User(BaseModel, table=True):
@@ -23,14 +35,15 @@ class User(BaseModel, table=True):
     roles: List[Role] = Relationship(back_populates="users", link_model="UserRoleLink")
     
 
-class UserIn(User):
+class UserIn(SQLModel):
     """
     仅管理员能创建用户，创建时分配角色
     """
     role_ids: List[int] = [] 
-    hashed_password: str
+    password: str
+
     
-class UserUpdateBaseInfo(User):
+class UserUpdateBaseInfo(SQLModel):
     """
     更新用户基本信息
     """
@@ -38,8 +51,9 @@ class UserUpdateBaseInfo(User):
     nickname: str
     phone: str
     email: str
-    
-class UserUpdateActive(User):
+
+
+class UserUpdateActive(SQLModel):
     """
     更新用户状态
     """

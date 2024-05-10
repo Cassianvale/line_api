@@ -29,7 +29,7 @@ class BaseModel(SQLModel, table=True):
             cls.tablename = "".join(ls)
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         
     @classmethod
     def get_column_attrs(cls) -> list:

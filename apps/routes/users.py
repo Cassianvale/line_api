@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
+
 from datetime import timedelta
 from typing import List
 from fastapi import Depends, HTTPException, status

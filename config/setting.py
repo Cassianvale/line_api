@@ -3,6 +3,7 @@
 
 import os
 import secrets
+from dotenv import load_dotenv
 from typing import Literal, Annotated, Any, ClassVar
 from pydantic import Field, AnyUrl, BeforeValidator, computed_field, MySQLDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -31,18 +32,19 @@ def get_env_file():
     return "../.env.development" if debug_mode else "../.env.production"
 
 
+load_dotenv(get_env_file())
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=get_env_file(),
         env_ignore_empty=True,
         extra="ignore"
     )
-    PROJECT_NAME: str
+    PROJECT_NAME: str = str(os.getenv('PROJECT_NAME'))
     VERSION: str = "0.0.1"
     API_V1_STR: str = "/api/v1"
-
     DOMAIN: str = "localhost"
-
     SECRET_KEY: str = secrets.token_urlsafe(32)
     ACCESS_TOKEN_EXPIRE_MINUTES: str = "1440"
     REFRESH_TOKEN_EXPIRE_MINUTES: str = "1440"
@@ -57,7 +59,8 @@ class Settings(BaseSettings):
     # 是否支持携带 cookie
     ALLOW_CREDENTIALS: bool = Field(default=True, env="ALLOW_CREDENTIALS")
     # 允许的 HTTP 方法列表
-    ALLOW_METHODS: list[str] = Field(default=["GET", "POST", "PUT", "DELETE"], env="ALLOW_METHODS", custom_parser=parse_list)
+    ALLOW_METHODS: list[str] = Field(default=["GET", "POST", "PUT", "DELETE"], env="ALLOW_METHODS",
+                                     custom_parser=parse_list)
     # 允许的 HTTP 头部列表
     ALLOW_HEADERS: list[str] = Field(default=["*"], env="ALLOW_HEADERS", custom_parser=parse_list)
     #
@@ -71,29 +74,22 @@ class Settings(BaseSettings):
             return f"http://{self.DOMAIN}"
         return f"https://{self.DOMAIN}"
 
-    MYSQL_HOST: str
-    MYSQL_PORT: int = 3306
-    MYSQL_DB: str = ""
-    MYSQL_USER: str
-    MYSQL_PASSWORD: str
+    MYSQL_HOST: str = str(os.getenv('MYSQL_HOST'))
+    MYSQL_PORT: int = int(os.getenv('MYSQL_PORT', 3306))
+    MYSQL_DB: str = str(os.getenv('MYSQL_DB'))
+    MYSQL_USER: str = str(os.getenv('MYSQL_USER'))
+    MYSQL_PASSWORD: str = str(os.getenv('MYSQL_PASSWORD'))
 
     @computed_field  # type: ignore[misc]
     @property
-    def SQLALCHEMY_DATABASE_URI(self) -> MySQLDsn:
-        return MultiHostUrl.build(
-            scheme="mysql+pymysql",
-            username=self.MYSQL_USER,
-            password=self.MYSQL_PASSWORD,
-            host=self.MYSQL_HOST,
-            port=self.MYSQL_PORT,
-            path=self.MYSQL_DB,
-        )
+    def SQLALCHEMY_DATABASE_URI(self) -> str:
+        return f"mysql+pymysql://{self.MYSQL_USER}:{self.MYSQL_PASSWORD}@{self.MYSQL_HOST}:{self.MYSQL_PORT}/{self.MYSQL_DB}"
 
     # Redis configuration
-    REDIS_HOST: str
-    REDIS_PORT: int = 6379
-    REDIS_DB: int = 0
-    REDIS_PASSWORD: str = ""
+    REDIS_HOST: str = str(os.getenv('REDIS_HOST'))
+    REDIS_PORT: int = int(os.getenv('REDIS_PORT', 6379))
+    REDIS_DB: int = int(os.getenv('REDIS_DB', 0))
+    REDIS_PASSWORD: str = str(os.getenv('REDIS_PASSWORD'))
 
     @computed_field  # type: ignore[misc]
     @property
@@ -104,12 +100,4 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
-
-# print(get_env_file())
-# print(settings)
-# print(settings.API_V1_STR)
-# print(settings.SQLALCHEMY_DATABASE_URI)
-# print(settings.REDIS_URI)
-
-
 
