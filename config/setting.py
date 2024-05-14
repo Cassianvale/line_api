@@ -4,10 +4,9 @@
 import os
 import secrets
 from dotenv import load_dotenv
-from typing import Literal, Annotated, Any, ClassVar
-from pydantic import Field, AnyUrl, BeforeValidator, computed_field, MySQLDsn
+from typing import Literal, Annotated, Any
+from pydantic import Field, AnyUrl, BeforeValidator, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic_core import MultiHostUrl
 
 """false生产环境，true开发环境"""
 os.environ['DEBUG'] = 'false'
@@ -29,7 +28,7 @@ def parse_list(v: str) -> list[str]:
 
 def get_env_file():
     debug_mode = os.getenv('DEBUG', 'false').lower() == 'true'
-    return "../.env.development" if debug_mode else "../.env.production"
+    return ".env.development" if debug_mode else ".env.production"
 
 
 load_dotenv(get_env_file())
@@ -41,6 +40,7 @@ class Settings(BaseSettings):
         env_ignore_empty=True,
         extra="ignore"
     )
+
     PROJECT_NAME: str = str(os.getenv('PROJECT_NAME'))
     VERSION: str = "0.0.1"
     API_V1_STR: str = "/api/v1"
@@ -74,13 +74,12 @@ class Settings(BaseSettings):
             return f"http://{self.DOMAIN}"
         return f"https://{self.DOMAIN}"
 
-    MYSQL_HOST: str = str(os.getenv('MYSQL_HOST'))
-    MYSQL_PORT: int = int(os.getenv('MYSQL_PORT', 3306))
-    MYSQL_DB: str = str(os.getenv('MYSQL_DB'))
-    MYSQL_USER: str = str(os.getenv('MYSQL_USER'))
-    MYSQL_PASSWORD: str = str(os.getenv('MYSQL_PASSWORD'))
+    MYSQL_HOST: str = os.getenv("MYSQL_HOST", "localhost")
+    MYSQL_PORT: int = int(os.getenv("MYSQL_PORT", 3306))
+    MYSQL_DB: str = os.getenv("MYSQL_DB", "defaultdb")
+    MYSQL_USER: str = os.getenv("MYSQL_USER", "defaultuser")
+    MYSQL_PASSWORD: str = os.getenv("MYSQL_PASSWORD", "defaultpassword")
 
-    @computed_field  # type: ignore[misc]
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> str:
         return f"mysql+pymysql://{self.MYSQL_USER}:{self.MYSQL_PASSWORD}@{self.MYSQL_HOST}:{self.MYSQL_PORT}/{self.MYSQL_DB}"
@@ -100,4 +99,3 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
-

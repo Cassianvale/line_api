@@ -1,8 +1,12 @@
-import os
 from logging.config import fileConfig
 
+from sqlalchemy import engine_from_config
+from sqlalchemy import pool
+
 from alembic import context
-from sqlalchemy import engine_from_config, pool
+
+import os
+import sys
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -10,35 +14,28 @@ config = context.config
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
-fileConfig(config.config_file_name)
+if config.config_file_name is not None:
+    fileConfig(config.config_file_name)
 
 # add your model's MetaData object here
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-# target_metadata = None
 
-from app.models import SQLModel  # noqa
+from core.database import BaseModel
 
-target_metadata = SQLModel.metadata
+target_metadata = BaseModel.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
+# 添加当前项目路径到环境变量
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(BASE_DIR)
 
 
-def get_url():
-    user = os.getenv("MYSQL_USER", "root")
-    password = os.getenv("MYSQL_PASSWORD", "")
-    host = os.getenv("MYSQL_HOST", "testdb")
-    port = os.getenv("MYSQL_PORT", "3306")
-    db = os.getenv("MYSQL_DB", "testdb")
-    return f"mysql+pymysql://{user}:{password}@{host}:{port}/{db}"
-
-
-# 离线模式
-def run_migrations_offline():
+def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
 
     This configures the context with just a URL
@@ -50,44 +47,42 @@ def run_migrations_offline():
     script output.
 
     """
-    url = get_url()
+    url = config.get_main_option("sqlalchemy.url")
     context.configure(
-        url=url, target_metadata=target_metadata, literal_binds=True, compare_type=True
+        url=url,
+        target_metadata=target_metadata,
+        literal_binds=True,
+        dialect_opts={"paramstyle": "named"},
+        compare_type=True,  # 是否检查字段类型，字段长度
+        compare_server_default=True  # 是否比较在数据库中的默认值
     )
 
     with context.begin_transaction():
         context.run_migrations()
 
 
-# 在线模式
-def run_migrations_online():
+def run_migrations_online() -> None:
     """Run migrations in 'online' mode.
 
     In this scenario we need to create an Engine
     and associate a connection with the context.
 
     """
-    # 获取配置
-    configuration = config.get_section(config.config_ini_section)
-    configuration["sqlalchemy.url"] = get_url()
-    # 创建引擎
     connectable = engine_from_config(
-        configuration,
+        config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
-        poolclass=pool.NullPool,  # 不使用连接池
+        poolclass=pool.NullPool,
     )
 
     with connectable.connect() as connection:
-        # 配置 Alembic 上下文，指定数据库连接、目标元数据（定义数据库模型的地方），以及是否比较类型（用于在数据库模型更改时检测类型变化）
         context.configure(
-            connection=connection, target_metadata=target_metadata, compare_type=True
+            connection=connection, target_metadata=target_metadata
         )
 
         with context.begin_transaction():
             context.run_migrations()
 
 
-# 检查是否处于离线模式
 if context.is_offline_mode():
     run_migrations_offline()
 else:

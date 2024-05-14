@@ -7,6 +7,9 @@ mysql==8.2
 ## 接口地址  
 https://6xgj8epdfo.apifox.cn
 
+
+alembic revision --autogenerate -m "Initial migration"
+
 ## 版本依赖
 1.更新依赖文件  
 `pip freeze > ./requirements.txt`

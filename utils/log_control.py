@@ -1,12 +1,30 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
+import time
+import colorlog
 import logging
 from logging import handlers
-import colorlog
-import time
 from pathlib import Path
-from utils.__init__ import ensure_path_sep
+from typing import Text
+
+
+def root_path():
+    """获取根路径"""
+    path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    return path
+
+
+def ensure_path_sep(path: Text) -> Text:
+    """兼容 windows 和 linux 不同环境的操作系统路径 """
+    if "/" in path:
+        path = os.sep.join(path.split("/"))
+
+    if "\\" in path:
+        path = os.sep.join(path.split("\\"))
+
+    return root_path() + path
 
 
 class LogHandler:
@@ -68,8 +86,11 @@ class LogHandler:
     def create_color_formatter():
         """ 设置带颜色的日志格式 """
         colors = {
-            'DEBUG': 'cyan', 'INFO': 'green', 'WARNING': 'yellow',
-            'ERROR': 'red', 'CRITICAL': 'red'
+            'DEBUG': 'cyan',
+            'INFO': 'green',
+            'WARNING': 'yellow',
+            'ERROR': 'red',
+            'CRITICAL': 'red'
         }
         return colorlog.ColoredFormatter(
             '%(log_color)s[%(asctime)s] [%(module)s] [%(lineno)d] [%(levelname)s]: %(message)s',
@@ -86,10 +107,15 @@ logs_dir.mkdir(parents=True, exist_ok=True)
 # 创建不同级别的日志处理器
 INFO = LogHandler(ensure_path_sep(f"\\logs\\info-{now_time_day}.log"), level='info')
 ERROR = LogHandler(ensure_path_sep(f"\\logs\\error-{now_time_day}.log"), level='error')
+DEBUG = LogHandler(ensure_path_sep(f"\\logs\\debug-{now_time_day}.log"), level='debug')
 WARNING = LogHandler(ensure_path_sep(f"\\logs\\warning-{now_time_day}.log"), level='warning')
 
 if __name__ == '__main__':
+    print(root_path())
     INFO.logger.info("Success message")
     INFO.logger.error("TEST")
+    INFO.logger.critical("Critical message")
+    DEBUG.logger.info("Debug Info message")
+    DEBUG.logger.debug("Debug message")
     ERROR.logger.error("Error message")
     WARNING.logger.warning("Warning message")

@@ -6,12 +6,12 @@ from datetime import datetime
 from sqlmodel import SQLModel, Field, inspect
 
 
-class BaseModel(SQLModel, table=True):
+class BaseModel(SQLModel):
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    create_datetime: Optional[datetime] = Field(default=None)
-    update_datetime: Optional[datetime] = Field(default=None)
-    delete_datetime: Optional[datetime] = Field(default=None)
+    create_time: Optional[datetime] = Field(default=None)
+    update_time: Optional[datetime] = Field(default=None)
+    delete_time: Optional[datetime] = Field(default=None)
     is_delete: Optional[bool] = Field(default=False)
     
     def __init_subclass__(cls, **kwargs):
