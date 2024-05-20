@@ -3,14 +3,13 @@
 
 from core.database import BaseModel
 from sqlmodel import SQLModel, Field, Relationship
-from sqlalchemy.orm import relationship
 from typing import List, Optional
 from datetime import datetime
 # from apps.item.model import Item
 
 class UserRoleLink(SQLModel, table=True):
     __tablename__ = "user_role_link"
-    __table_args__ = ({"comment": "用户角色关联表"})
+    __table_args__ = ({"comment": "UserRole Table"})
     user_id: int = Field(foreign_key="auth_users.id", primary_key=True)
     role_id: int = Field(foreign_key="auth_role.id", primary_key=True)
     user: Optional["User"] = Relationship(back_populates="role_links")
@@ -20,7 +19,7 @@ class UserRoleLink(SQLModel, table=True):
 
 class Role(BaseModel, table=True):
     __tablename__ = "auth_role"
-    __table_args__ = ({"comment": "角色表"})
+    __table_args__ = ({"comment": "Role Table"})
 
     name: str = Field(sa_column_kwargs={"comment": "角色名称"}, max_length=50, nullable=False)
     desc: Optional[str] = Field(sa_column_kwargs={"comment": "描述"}, max_length=255, nullable=True)
@@ -32,7 +31,7 @@ class Role(BaseModel, table=True):
 
 class User(BaseModel, table=True):
     __tablename__ = "auth_users"
-    __table_args__ = ({"comment": "用户表"})
+    __table_args__ = ({"comment": "User Table"})
 
     username: str = Field(sa_column_kwargs={"comment": "用户名"}, max_length=50, index=True, nullable=True, unique=True)
     hashed_password: str = Field(sa_column_kwargs={"comment": "密码"}, max_length=200, nullable=False)
