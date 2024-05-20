@@ -5,7 +5,7 @@ from core.database import BaseModel
 from sqlmodel import SQLModel, Field, Relationship
 from typing import List, Optional
 from datetime import datetime
-# from apps.item.model import Item
+
 
 class UserRoleLink(SQLModel, table=True):
     __tablename__ = "user_role_link"
@@ -29,6 +29,8 @@ class Role(BaseModel, table=True):
 
     user_links: List["UserRoleLink"] = Relationship(back_populates="role",  sa_relationship_kwargs={"cascade": "all, delete-orphan"})
 
+
+from apps.item.model import Item
 class User(BaseModel, table=True):
     __tablename__ = "auth_users"
     __table_args__ = ({"comment": "User Table"})
@@ -45,7 +47,7 @@ class User(BaseModel, table=True):
         back_populates="user",
         sa_relationship_kwargs={"cascade": "all, delete-orphan"}
     )
-    # items: List["Item"] = Relationship(back_populates="owner")
+    items: List["Item"] = Relationship(back_populates="owner")
 
 
 class UserIn(SQLModel):

@@ -13,20 +13,6 @@ class BaseModel(SQLModel):
     update_time: Optional[datetime] = Field(default=None)
     delete_time: Optional[datetime] = Field(default=None)
     is_delete: Optional[bool] = Field(default=False)
-    
-    def __init_subclass__(cls, **kwargs):
-        """
-        自动将表名改为小写，如果有自定义表名则取自定义的，否则取小写类名
-        """
-        super().__init_subclass__(**kwargs)
-        if not getattr(cls, "tablename", None):
-            model_name = cls.__name__
-            ls = []
-            for index, char in enumerate(model_name):
-                if char.isupper() and index != 0:
-                    ls.append("_")
-                ls.append(char.lower())
-            cls.tablename = "".join(ls)
 
     class Config:
         from_attributes = True

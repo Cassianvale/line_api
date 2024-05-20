@@ -4,6 +4,7 @@
 from core.database import BaseModel
 from sqlmodel import SQLModel, Field, Relationship
 from typing import List, Optional
+from apps.auth.model import User
 
 
 class ItemBase(SQLModel):
@@ -11,7 +12,7 @@ class ItemBase(SQLModel):
 
 
 class Item(BaseModel, table=True):
-    from apps.auth.model import User
+    
     __tablename__ = "items"
     __table_args__ = ({"comment": "Item Table"})
     title: str = Field(sa_column_kwargs={"comment": "标题"}, max_length=50, nullable=False)
