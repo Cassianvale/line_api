@@ -46,9 +46,9 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     DOMAIN: str = "localhost"
     SECRET_KEY: str = secrets.token_urlsafe(32)
-    ACCESS_TOKEN_EXPIRE_MINUTES: str = "1440"
-    REFRESH_TOKEN_EXPIRE_MINUTES: str = "1440"
-    ACCESS_TOKEN_CACHE_MINUTES: str = "30"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
+    REFRESH_TOKEN_EXPIRE_MINUTES: int = 1440
+    ACCESS_TOKEN_CACHE_MINUTES: int = 30
 
     # 是否启用跨域
     CORS_ORIGIN_ENABLE: bool = Field(default=True, env="CORS_ORIGIN_ENABLE")

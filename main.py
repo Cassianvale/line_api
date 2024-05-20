@@ -4,7 +4,6 @@
 import uvicorn
 from fastapi import FastAPI
 from apps import auth
-from config.setting import settings
 from core.initialize import InitializeData, Environment
 from utils.log_control import INFO
 
@@ -17,10 +16,8 @@ async def startup_event():
     print("Starting up...")
     try:
         InitializeData.initialize(Environment.dev)
-        print("数据库创建成功!")
     except Exception as error:
         INFO.logger.error(f"出现错误: {error}")
-        print("出现错误，请查看日志文件以了解详细信息")
 
 
 app.include_router(auth.login.router, prefix="/users", tags=["login"])

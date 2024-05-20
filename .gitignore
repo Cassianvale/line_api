@@ -5,7 +5,10 @@
 .vscode
 .idea
 venv
+.venv
 alembic/versions/*
+alembic/versions_dev/*
+alembic/versions_pro/*
 lib/*
 logs/*
 !.gitkeep

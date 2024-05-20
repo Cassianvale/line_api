@@ -38,3 +38,7 @@ alembic revision --autogenerate -m "Initial migration"
 
 降级
 `alembic downgrade 版本号`
+
+测试
+`alembic -c alembic.ini --name dev revision --autogenerate -m 0.0.1`
+`alembic --name dev upgrade head`

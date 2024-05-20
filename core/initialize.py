@@ -1,20 +1,46 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 import os
+import time                
+import sys
+import threading
 import subprocess
 from datetime import datetime
 from enum import Enum
 from getpass import getpass
-from core.db import MysqlManager
+from utils.db_control import MysqlManager
 from config.setting import settings
-from sqlmodel import SQLModel, Session, create_engine
-from apps.auth.models.user import User, Role, UserRole
+from sqlmodel import SQLModel, Session, select as sql_select
+import select
+import msvcrt
+from apps.auth.model import User, Role, UserRole
 from core import security
 from utils.log_control import INFO
-from alembic.config import Config
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-class Environment(Enum):
+def input_with_timeout(prompt: str, timeout: float) -> str:
+    start_time = time.time()
+    sys.stdout.write(prompt)
+    sys.stdout.flush()
+    input_str = ''
+    end_time = start_time + timeout
+
+    while True:
+        if msvcrt.kbhit():
+            chr = msvcrt.getwche()  # 注意使用 getwche() 而不是 getch()，这样可以正常显示输入字符
+            if ord(chr) == 13:  # 按下回车键
+                break
+            input_str += chr
+        if time.time() > end_time:
+            raise TimeoutError("Input operation timed out")
+        time.sleep(0.1)  # 稍微等待一下，避免 CPU 使用率过高
+
+    return input_str
+
+
+class Environment(str, Enum):
     dev = "dev"
     pro = "pro"
 
@@ -41,31 +67,43 @@ class InitializeData:
         ]
 
         for role in roles:
-            existing_role = session.query(Role).filter_by(name=role.name).first()
+            stmt = sql_select(Role).where(Role.name == role.name)
+            existing_role = session.scalars(stmt).first()
             if not existing_role:
                 session.add(role)
                 session.commit()
                 INFO.logger.info(f"角色 '{role.name}' 已被创建")
 
+
     @classmethod
     def create_super_user(cls, session: Session):
-        while True:
-            username = input("Enter Super Admin Username: ")
-            # 检查是否已经存在相同的用户名
-            existing_user = session.query(User).filter_by(username=username).first()
-            if existing_user:
-                print(f"用户名 '{username}' 已经存在，请重新输入")
-                continue
-            
-            password = getpass("Enter Super Admin Password: ")
+        try:
+            # 设置3秒等待时间
+            input_data = input_with_timeout("是否创建超级管理员？按回车确认，3秒后自动跳过: \n", 3)
+            if input_data.strip() == "":
+                # 检查是否已经存在超级管理员用户
+                super_admin_role = session.query(Role).filter_by(name="Super Admin").first()
+                if super_admin_role:
+                    super_user = session.query(User).join(UserRole).filter(UserRole.role_id == super_admin_role.id).first()
+                    if super_user:
+                        INFO.logger.info(f"超级管理员用户 '{super_user.username}' 已存在.")
+                        return None
 
-            hashed_password = security.get_password_hash(password)
-            super_user = User(username=username, hashed_password=hashed_password, is_superuser=True)
-            session.add(super_user)
-            session.commit()
-            INFO.logger.info(f"超级管理员创建成功, 用户名为: {username}")
-
-            return super_user
+                # 如果不存在超级管理员，提示输入用户名和密码创建一个
+                username = input("请输入超级管理员用户名: ")
+                password = getpass("请输入超级管理员密码: ")
+                hashed_password = security.hash_password(password)
+                new_user = User(username=username, hashed_password=hashed_password, is_active=True)
+                session.add(new_user)
+                session.commit()
+                INFO.logger.info(f"超级管理员 '{username}' 已被创建")
+                return new_user
+            else:
+                INFO.logger.info("未创建超级管理员。")
+                return None
+        except TimeoutError:
+            INFO.logger.info("操作超时，未创建超级管理员。")
+            return None
 
     @classmethod
     def bind_super_user_role(cls, session: Session, super_user: User):
@@ -85,34 +123,31 @@ class InitializeData:
         模型迁移映射到数据库
         """
 
-        BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        alembic_cfg = Config(os.path.join(BASE_DIR, 'alembic.ini'))
-        alembic_cfg.set_main_option('script_location', 'alembic')
-        print(BASE_DIR)
+        # 生成迁移文件
+        print("生成迁移文件")
         subprocess.check_call(['alembic', '--name', f'{env.value}', 'revision', '--autogenerate', '-m', f'{settings.VERSION}'], cwd=BASE_DIR)
+        print("迁移文件映射到数据库")
+        # 将迁移文件映射到数据库
         subprocess.check_call(['alembic', '--name', f'{env.value}', 'upgrade', 'head'], cwd=BASE_DIR)
         INFO.logger.info(f"环境：{env}  {settings.VERSION} 数据库表迁移完成")
 
     @classmethod
     def initialize(cls, env: Environment = Environment.pro):
-        
-        """
-        Initialize database and data
-        """
-        print("initialize方法")
-        # Connect to the database
+        # 连接数据库
         engine = MysqlManager.connect_to_database()
-
-        # Create database tables
+        # 创建所有表
         cls.create_tables(engine)
 
-        # Create session and initialize data
         with Session(engine) as session:
+            # 初始化角色表
             cls.create_roles(session)
-            super_user = cls.create_super_user(session)
-            cls.bind_super_user_role(session, super_user)
 
-        # Execute migration
-        cls.migrate_model(env)
+            # 创建超级用户，不用的话注释掉
+            super_user = cls.create_super_user(session)
+            if super_user:
+                cls.bind_super_user_role(session, super_user)
+
+        # # 迁移数据库
+        # cls.migrate_model(env)
 
         INFO.logger.info(f"环境：{env} {settings.VERSION} 数据已初始化完成")

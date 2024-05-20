@@ -11,17 +11,11 @@ from config.setting import settings
 class MysqlManager:
 
     def __init__(self):
-        """
-        Initializes the MySQL Manager with a connection engine
-        """
         self.engine = self.connect_to_database()
         self.session = None
 
     @staticmethod
     def connect_to_database():
-        """
-        Create a new SQLAlchemy engine instance for MySQL connection
-        """
         engine = create_engine(
             str(settings.SQLALCHEMY_DATABASE_URI),
             echo=False,
@@ -30,16 +24,10 @@ class MysqlManager:
         return engine
 
     def open_session(self):
-        """
-        Open a new session to the database
-        """
         if self.session is None:
             self.session = Session(self.engine)
 
     def close_session(self):
-        """
-        Close the existing session if it's open
-        """
         if self.session:
             self.session.close()
             self.session = None
@@ -63,9 +51,6 @@ class MysqlManager:
 
 class RedisManager:
     def __init__(self):
-        """
-        Initializes the Redis Manager
-        """
         self.redis_instance = None
 
     def connect_to_database(self):
@@ -85,9 +70,6 @@ class RedisManager:
             raise RedisError(f"Redis connection failed: {e}")
 
     def close_redis_connection(self):
-        """
-        Placeholder for closing Redis connection
-        """
         self.redis_instance = None
 
     def connect_to_redis(self):

@@ -8,11 +8,11 @@ from config.setting import settings
 from typing import Annotated
 from fastapi.security import OAuth2PasswordBearer
 from fastapi import Depends, HTTPException, status
-from apps.auth.models.user import User
+from apps.auth.model import User
 from core import security
 from jose import JWTError, jwt
 from pydantic import ValidationError
-from core.db import MysqlManager
+from utils.db_control import MysqlManager
 
 
 def get_db() -> Generator[Session, None, None]:
