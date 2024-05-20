@@ -5,24 +5,12 @@ from core.database import BaseModel
 from sqlmodel import SQLModel, Field, Relationship
 from sqlalchemy.orm import relationship
 from typing import List, Optional
-from datetime import datetime
-
-
-class UserRole(SQLModel, table=True):
-    __tablename__ = "line_auth_user_role"
-    __table_args__ = ({"comment": "用户角色关联表"})
-
-    user_id: int = Field(foreign_key="line_auth_users.id", primary_key=True)
-    role_id: int = Field(foreign_key="line_auth_role.id", primary_key=True)
-
-    create_time: Optional[datetime] = Field(default=datetime.now(), sa_column_kwargs={"comment": "关联创建时间"})
-
-    users: Optional["User"] = Relationship(back_populates="roles")
-    role: Optional["Role"] = Relationship(back_populates="users")
+from apps.item.model import Item
+from apps.generic.generic_models import UserRole
 
 
 class Role(BaseModel, table=True):
-    __tablename__ = "line_auth_role"
+    __tablename__ = "auth_role"
     __table_args__ = ({"comment": "角色表"})
 
     name: str = Field(sa_column_kwargs={"comment": "角色名称"}, max_length=50, nullable=False)
@@ -31,11 +19,11 @@ class Role(BaseModel, table=True):
     disabled: bool = Field(default=False, sa_column_kwargs={"comment": "是否禁用"})
     is_admin: bool = Field(default=False, sa_column_kwargs={"comment": "是否为管理员"})
 
-    users: List[UserRole] = Relationship(back_populates="role")
+    users: List[UserRole] = Relationship(back_populates="role",  sa_relationship_kwargs={"cascade": "all, delete-orphan"})
 
 
 class User(BaseModel, table=True):
-    __tablename__ = "line_auth_users"
+    __tablename__ = "auth_users"
     __table_args__ = ({"comment": "用户表"})
 
     username: str = Field(sa_column_kwargs={"comment": "用户名"}, max_length=50, index=True, nullable=True, unique=True)
@@ -46,7 +34,8 @@ class User(BaseModel, table=True):
     email: Optional[str] = Field(sa_column_kwargs={"comment": "邮箱"}, max_length=50, nullable=True)
     is_active: bool = Field(default=True)
 
-    roles: List[UserRole] = Relationship(back_populates="users")
+    roles: List[UserRole] = Relationship(back_populates="users", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+    items: List[Item] = Relationship(back_populates="owner")
 
 
 class UserIn(SQLModel):
