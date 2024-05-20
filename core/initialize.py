@@ -13,7 +13,7 @@ from config.setting import settings
 from sqlmodel import SQLModel, Session, select as sql_select
 import select
 import msvcrt
-from apps.auth.model import User, Role, UserRole
+from apps.auth.model import User, Role, UserRoleLink
 from core import security
 from utils.log_control import INFO
 
@@ -84,7 +84,7 @@ class InitializeData:
                 # 检查是否已经存在超级管理员用户
                 super_admin_role = session.query(Role).filter_by(name="Super Admin").first()
                 if super_admin_role:
-                    super_user = session.query(User).join(UserRole).filter(UserRole.role_id == super_admin_role.id).first()
+                    super_user = session.query(User).join(UserRoleLink).filter(UserRoleLink.role_id == super_admin_role.id).first()
                     if super_user:
                         INFO.logger.info(f"超级管理员用户 '{super_user.username}' 已存在.")
                         return None
@@ -112,7 +112,7 @@ class InitializeData:
         """
         super_admin_role = session.query(Role).filter_by(name="Super Admin").first()
         if super_admin_role:
-            user_role_link = UserRole(user_id=super_user.id, role_id=super_admin_role.id, create_datetime=datetime.now())
+            user_role_link = UserRoleLink(user_id=super_user.id, role_id=super_admin_role.id, create_datetime=datetime.now())
             session.add(user_role_link)
             session.commit()
             INFO.logger.info(f"超级管理员: '{super_user.username}' 绑定角色: '{super_admin_role.name}'")

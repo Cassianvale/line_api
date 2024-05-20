@@ -5,8 +5,17 @@ from core.database import BaseModel
 from sqlmodel import SQLModel, Field, Relationship
 from sqlalchemy.orm import relationship
 from typing import List, Optional
-from apps.item.model import Item
-from apps.generic.generic_models import UserRole
+from datetime import datetime
+# from apps.item.model import Item
+
+class UserRoleLink(SQLModel, table=True):
+    __tablename__ = "user_role_link"
+    __table_args__ = ({"comment": "用户角色关联表"})
+    user_id: int = Field(foreign_key="auth_users.id", primary_key=True)
+    role_id: int = Field(foreign_key="auth_role.id", primary_key=True)
+    user: Optional["User"] = Relationship(back_populates="role_links")
+    role: Optional["Role"] = Relationship(back_populates="user_links")
+    create_time: Optional[datetime] = Field(default=datetime.now(), sa_column_kwargs={"comment": "关联创建时间"})
 
 
 class Role(BaseModel, table=True):
@@ -19,8 +28,7 @@ class Role(BaseModel, table=True):
     disabled: bool = Field(default=False, sa_column_kwargs={"comment": "是否禁用"})
     is_admin: bool = Field(default=False, sa_column_kwargs={"comment": "是否为管理员"})
 
-    users: List[UserRole] = Relationship(back_populates="role",  sa_relationship_kwargs={"cascade": "all, delete-orphan"})
-
+    user_links: List["UserRoleLink"] = Relationship(back_populates="role",  sa_relationship_kwargs={"cascade": "all, delete-orphan"})
 
 class User(BaseModel, table=True):
     __tablename__ = "auth_users"
@@ -34,8 +42,11 @@ class User(BaseModel, table=True):
     email: Optional[str] = Field(sa_column_kwargs={"comment": "邮箱"}, max_length=50, nullable=True)
     is_active: bool = Field(default=True)
 
-    roles: List[UserRole] = Relationship(back_populates="users", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
-    items: List[Item] = Relationship(back_populates="owner")
+    role_links: List["UserRoleLink"] = Relationship(
+        back_populates="user",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"}
+    )
+    # items: List["Item"] = Relationship(back_populates="owner")
 
 
 class UserIn(SQLModel):
@@ -61,3 +72,4 @@ class UserUpdateActive(SQLModel):
     更新用户状态
     """
     is_active: bool
+
