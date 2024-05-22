@@ -15,6 +15,7 @@ from pydantic import ValidationError
 from utils.db_control import MysqlManager
 
 
+# 每次请求都会创建一个新的会话，并在请求结束后关闭会话
 def get_db() -> Generator[Session, None, None]:
     engine = MysqlManager.connect_to_database()
     with Session(engine) as session:
@@ -29,8 +30,10 @@ reusable_oauth2 = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_V1_STR}/login"
 )
 
-# 依赖注入
+# 依赖注入,获取数据库会话,可以使用SessionDep作为参数类型，FastAPI会自动提供一个数据库会话对象
+# Annotated为类型添加额外的元数据
 SessionDep = Annotated[Session, Depends(get_db)]
+# 依赖注入的OAuth2令牌,任何需要OAuth2令牌的地方，可以使用TokenDep作为参数类型,FastAPI会自动提供一个令牌字符串
 TokenDep = Annotated[str, Depends(reusable_oauth2)]
 
 
@@ -54,6 +57,7 @@ def get_current_user(session: SessionDep, token: TokenDep) -> User:
     return user
 
 
+# 从get_current_user函数中获取当前用户, 在任何需要当前用户的地方，可以使用CurrentUser作为参数类型
 CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
