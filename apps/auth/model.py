@@ -14,13 +14,13 @@ class UserRoleLink(SQLModel, table=True):
     role_id: int = Field(foreign_key="auth_role.id", primary_key=True)
     user: Optional["User"] = Relationship(back_populates="role_links")
     role: Optional["Role"] = Relationship(back_populates="user_links")
-    create_time: Optional[datetime] = Field(default=datetime.now(), sa_column_kwargs={"comment": "关联创建时间"})
+    create_time: Optional[datetime] = Field(default=datetime.now())
+    update_time: Optional[datetime] = Field(default=None)
 
 
 class Role(BaseModel, table=True):
     __tablename__ = "auth_role"
     __table_args__ = ({"comment": "Role Table"})
-
     name: str = Field(sa_column_kwargs={"comment": "角色名称"}, max_length=50, nullable=False)
     desc: Optional[str] = Field(sa_column_kwargs={"comment": "描述"}, max_length=255, nullable=True)
     order: Optional[int] = Field(default=0, sa_column_kwargs={"comment": "排序"})
@@ -30,11 +30,9 @@ class Role(BaseModel, table=True):
     user_links: List["UserRoleLink"] = Relationship(back_populates="role",  sa_relationship_kwargs={"cascade": "all, delete-orphan"})
 
 
-from apps.item.model import Item
 class User(BaseModel, table=True):
     __tablename__ = "auth_users"
     __table_args__ = ({"comment": "User Table"})
-
     username: str = Field(sa_column_kwargs={"comment": "用户名"}, max_length=50, index=True, nullable=True, unique=True)
     hashed_password: str = Field(sa_column_kwargs={"comment": "密码"}, max_length=200, nullable=False)
     avatar: Optional[str] = Field(sa_column_kwargs={"comment": "头像"}, max_length=200, nullable=True)

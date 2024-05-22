@@ -9,7 +9,7 @@ from sqlmodel import SQLModel, Field, inspect
 class BaseModel(SQLModel):
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    create_time: Optional[datetime] = Field(default=None)
+    create_time: Optional[datetime] = Field(default=datetime.now())
     update_time: Optional[datetime] = Field(default=None)
     delete_time: Optional[datetime] = Field(default=None)
     is_delete: Optional[bool] = Field(default=False)

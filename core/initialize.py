@@ -3,7 +3,6 @@
 import os
 import time                
 import sys
-import threading
 import subprocess
 from datetime import datetime
 from enum import Enum
@@ -11,11 +10,11 @@ from getpass import getpass
 from utils.db_control import MysqlManager
 from config.setting import settings
 from sqlmodel import SQLModel, Session, select as sql_select
-import select
 import msvcrt
 from apps.auth.model import User, Role, UserRoleLink
 from core import security
 from utils.log_control import INFO
+
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -118,11 +117,10 @@ class InitializeData:
             INFO.logger.info(f"超级管理员: '{super_user.username}' 绑定角色: '{super_admin_role.name}'")
 
     @classmethod
-    def migrate_model(cls, env: Environment = Environment.pro):
+    def migrate_model(cls, env: Environment = Environment.dev):
         """
         模型迁移映射到数据库
         """
-
         # 生成迁移文件
         print("生成迁移文件")
         subprocess.check_call(['alembic', '--name', f'{env.value}', 'revision', '--autogenerate', '-m', f'{settings.VERSION}'], cwd=BASE_DIR)
@@ -132,7 +130,7 @@ class InitializeData:
         INFO.logger.info(f"环境：{env}  {settings.VERSION} 数据库表迁移完成")
 
     @classmethod
-    def initialize(cls, env: Environment = Environment.pro):
+    def initialize(cls):
         # 连接数据库
         engine = MysqlManager.connect_to_database()
         # 创建所有表
@@ -150,4 +148,4 @@ class InitializeData:
         # # 迁移数据库
         # cls.migrate_model(env)
 
-        INFO.logger.info(f"环境：{env} {settings.VERSION} 数据已初始化完成")
+        INFO.logger.info(f"数据已初始化完成")

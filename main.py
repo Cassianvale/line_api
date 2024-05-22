@@ -3,29 +3,42 @@
 
 import uvicorn
 from fastapi import FastAPI
-from apps import auth
-from core.initialize import InitializeData, Environment
+from contextlib import asynccontextmanager
+from apps import api as public_api
+from config.setting import settings
+from config.setting import get_env_file
+from core.initialize import InitializeData
 from utils.log_control import INFO
 
 
-app = FastAPI()
-
-
-@app.on_event("startup")
-async def startup_event():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     print("Starting up...")
     try:
-        InitializeData.initialize(Environment.dev)
+        # alembic.ini配置选择
+        InitializeData.initialize()
+        yield
     except Exception as error:
         INFO.logger.error(f"出现错误: {error}")
+        yield
 
 
-app.include_router(auth.login.router, prefix="/users", tags=["login"])
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    version=settings.VERSION,
+    description=settings.DESCRIPTION,
+    docs_url="/",
+    lifespan=lifespan
+)
 
+app.include_router(public_api)
 
-try:
-    uvicorn.run(app, host="127.0.0.1", port=8000)
-except KeyboardInterrupt:
-    INFO.logger.error(f"An error occurred: 程序被手动中断，正在执行清理...")
-    # 在这里执行任何清理代码
-    # print("清理完成，程序已关闭")
+if __name__ == "__main__":
+    try:
+        host_url = settings.DOMAIN
+        env_file = get_env_file()
+        INFO.logger.info(f"当前加载的环境配置文件为：{env_file}")
+        INFO.logger.info(f"服务器地址配置为: {host_url}")
+        uvicorn.run("main:app", host=host_url, port=8080, reload=True)
+    except KeyboardInterrupt as err:
+        INFO.logger.error(f"出现错误: {err}")
