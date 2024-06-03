@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
+
 import os
 import time                
 import sys
@@ -11,7 +12,7 @@ from utils.db_control import MysqlManager
 from config.setting import settings
 from sqlmodel import SQLModel, Session, select as sql_select
 import msvcrt
-from apps.auth.model import User, Role, UserRoleLink
+from apps.models.user import User, Role, UserRoleLink
 from core import security
 from utils.log_control import INFO
 

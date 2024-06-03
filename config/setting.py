@@ -45,7 +45,7 @@ class Settings(BaseSettings):
     DESCRIPTION: str = 'This a description.'
     VERSION: str = "1.2.1"
     API_V1_STR: str = "/api/v1"
-    DOMAIN: str = "localhost"
+    DOMAIN: str = os.getenv("DOMAIN","localhost")
     SECRET_KEY: str = secrets.token_urlsafe(32)
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
     REFRESH_TOKEN_EXPIRE_MINUTES: int = 1440
@@ -72,6 +72,7 @@ class Settings(BaseSettings):
     MYSQL_USER: str = os.getenv("MYSQL_USER", "defaultuser")
     MYSQL_PASSWORD: str = os.getenv("MYSQL_PASSWORD", "defaultpassword")
 
+    @computed_field  # type: ignore[misc]
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> str:
         return f"mysql+pymysql://{self.MYSQL_USER}:{self.MYSQL_PASSWORD}@{self.MYSQL_HOST}:{self.MYSQL_PORT}/{self.MYSQL_DB}"

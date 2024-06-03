@@ -3,7 +3,7 @@
 
 from datetime import datetime, timedelta
 from typing import Any
-from apps.auth.model import User
+from apps.models.user import User
 from jose import jwt
 from passlib.context import CryptContext
 from config.setting import settings

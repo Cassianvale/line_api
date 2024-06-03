@@ -3,9 +3,7 @@
 
 import os
 import yaml
-
-import utils
-from utils.log_control import INFO, ERROR
+from utils.log_control import INFO, ERROR, ensure_path_sep
 
 
 def get_yaml_data(filepath) -> dict:
@@ -20,7 +18,7 @@ def get_yaml_data(filepath) -> dict:
 
 def read_config(key: str) -> str:
     try:
-        config = utils.ensure_path_sep('\\config\\setting.yaml')
+        config = ensure_path_sep('\\config\\setting.yaml')
         data = get_yaml_data(config)
         return data[key]
     except KeyError:

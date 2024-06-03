@@ -8,7 +8,7 @@ from config.setting import settings
 from typing import Annotated
 from fastapi.security import OAuth2PasswordBearer
 from fastapi import Depends, HTTPException, status
-from apps.auth.model import User
+from apps.models.user import User
 from core import security
 from jose import JWTError, jwt
 from pydantic import ValidationError
