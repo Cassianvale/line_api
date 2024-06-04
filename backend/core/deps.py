@@ -16,7 +16,7 @@ from utils.db_control import MysqlManager
 
 
 # 每次请求都会创建一个新的会话，并在请求结束后关闭会话
-def get_db() -> Generator[Session, None, None]:
+def get_db() -> Generator[Session]:
     engine = MysqlManager.connect_to_database()
     with Session(engine) as session:
         yield session

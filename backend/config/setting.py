@@ -66,11 +66,16 @@ class Settings(BaseSettings):
     # 允许的 HTTP 头部列表
     ALLOW_HEADERS: list[str] = Field(default=["*"], env="ALLOW_HEADERS", custom_parser=parse_list)
 
-    MYSQL_HOST: str = os.getenv("MYSQL_HOST", "localhost")
-    MYSQL_PORT: int = int(os.getenv("MYSQL_PORT", 3306))
-    MYSQL_DB: str = os.getenv("MYSQL_DB", "defaultdb")
-    MYSQL_USER: str = os.getenv("MYSQL_USER", "defaultuser")
-    MYSQL_PASSWORD: str = os.getenv("MYSQL_PASSWORD", "defaultpassword")
+    MYSQL_ECHO: bool = False
+    MYSQL_DATABASE: str = 'fsm'
+    MYSQL_CHARSET: str = 'utf8mb4'
+
+    # Env MySQL
+    MYSQL_HOST: str
+    MYSQL_PORT: int
+    MYSQL_DB: str
+    MYSQL_USER: str
+    MYSQL_PASSWORD: str
 
     @computed_field  # type: ignore[misc]
     @property
